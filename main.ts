@@ -2,7 +2,7 @@
 // checks the complete static hand-in, stages it, then writes the canonical dossier.
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, lstatSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
 
@@ -10,6 +10,16 @@ const here = fileURLToPath(new URL('.', import.meta.url));
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 const game = join(here, 'game');
 const screenshots = join(here, 'screenshots');
+
+function inside(parent: string, child: string): boolean {
+  const rel = relative(resolve(parent), resolve(child));
+  return rel === '' || (!rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel));
+}
+
+const resolvedOut = resolve(out);
+if (inside(game, resolvedOut) || inside(resolvedOut, game) || inside(screenshots, resolvedOut) || inside(resolvedOut, screenshots)) {
+  throw new Error('MAKEFUN_OUTPUT_DIR must be outside game/ and screenshots/');
+}
 
 function imageSize(bytes: Uint8Array): [number, number] | undefined {
   if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
@@ -36,6 +46,36 @@ function imageSize(bytes: Uint8Array): [number, number] | undefined {
 for (const required of ['index.html', 'src/main.js', 'src/render.js', 'src/world.js']) {
   const path = join(game, required);
   if (!existsSync(path) || !lstatSync(path).isFile()) throw new Error(`required game source is missing: ${required}`);
+}
+function verifyLocalFile(base: string, specifier: string, context: string): string | undefined {
+  if (specifier.startsWith('data:')) return;
+  if (!specifier.startsWith('./') && !specifier.startsWith('../') && !specifier.startsWith('/')) {
+    throw new Error(`${context} must use a local path: ${specifier}`);
+  }
+  const target = specifier.startsWith('/') ? resolve(game, `.${specifier}`) : resolve(base, specifier);
+  if (!inside(game, target)) throw new Error(`${context} resolves outside game/: ${specifier}`);
+  let stat;
+  try { stat = lstatSync(target); } catch { throw new Error(`${context} points to a missing file: ${specifier}`); }
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`${context} must point to a regular file: ${specifier}`);
+  return target;
+}
+const indexHtml = readFileSync(join(game, 'index.html'), 'utf8');
+for (const match of indexHtml.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)) {
+  verifyLocalFile(game, match[1], 'game/index.html script');
+}
+const visitedModules = new Set<string>();
+function inspectModule(path: string): void {
+  if (visitedModules.has(path)) return;
+  visitedModules.add(path);
+  const source = readFileSync(path, 'utf8');
+  for (const match of source.matchAll(/\b(?:import\s*(?:[^'";]*?\sfrom\s*)?|export\s+[^'";]*?\sfrom\s*)["']([^"']+)["']/g)) {
+    const dependency = verifyLocalFile(join(path, '..'), match[1], `module ${relative(game, path)}`);
+    if (dependency && /\.m?js$/i.test(dependency)) inspectModule(dependency);
+  }
+}
+for (const match of indexHtml.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)) {
+  const script = verifyLocalFile(game, match[1], 'game/index.html script');
+  if (script && /\.m?js$/i.test(script)) inspectModule(script);
 }
 if (!existsSync(screenshots) || !lstatSync(screenshots).isDirectory()) throw new Error('screenshots/ directory is required');
 const shots = existsSync(screenshots)
