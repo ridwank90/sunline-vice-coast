@@ -1,6 +1,6 @@
 # Sunline: Vice Coast
 
-A sunny coastal open-world crime game. Explore the city on foot or behind the wheel, take vehicles, complete missions, and escape escalating police pursuit.
+Sunline: Vice Coast is an original, offline coastal crime adventure. Explore its sunlit street grid on foot or behind the wheel, take cars, work Mara's story, and lose the patrols as they respond to stolen vehicles and gunfire.
 
 [Play and follow the entry on make.fun](https://make.fun/bounty/gta6-01)
 
@@ -23,7 +23,11 @@ Serve `game/` with any static HTTP server and open `game/index.html` in a deskto
 
 Steal a car to start the Sunline job, find Mara by the marina, then deliver her package to the lighthouse. Patrols respond to stolen cars and gunfire; break line of sight and keep moving until the heat fades. Explore side streets for three cash stashes. Position, cash, health, story progress, and stashes save in this browser.
 
-The HUD shows health, cash, wanted level, the active objective, nearby traffic, patrols, stashes, and a route marker on the minimap. High contrast mode is available at any point during play.
+## Coast Run
+
+At the marina, press **R** to accept the Coast Run: a 90-second delivery sprint through four named checkpoints, ending at the beacon steps. Follow the orange route on the minimap and the highlighted next gate on screen. The clock stops at completion; the payout starts at $650 and falls with elapsed time, with a $150 minimum. Timeouts reset the route so it can be tried again. Cash and your fastest completed time persist with the rest of your local save.
+
+The HUD shows health, cash, wanted level, the active objective or courier timer and checkpoint, nearby traffic, patrols, stashes, and route markers on the minimap. High contrast mode is available at any point during play. No network requests, external assets, build tools, or runtime dependencies are used.
 
 ## Screenshots
 

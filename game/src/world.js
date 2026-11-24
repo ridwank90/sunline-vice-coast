@@ -25,13 +25,17 @@ export function makeWorld() {
   }
   const state={player,cars,people,police,shots,pickups,heat:0,heatTimer:0,story:0,missionText:'Find Mara at the marina',missionDone:false,clock:0,toast:'',toastTime:0,paused:false,screen:'title',seed:1,highContrast:false};
   state.anchor={x:1196,y:1550}; state.drop={x:2160,y:1660}; state.mara={x:1975,y:860};
+  state.courier={phase:'ready',startedAt:0,elapsed:0,best:0,reward:0,checkpoint:0,
+    route:[{x:1196,y:1550,name:'Marina gate'},{x:1720,y:1360,name:'Canal bend'},{x:2145,y:1450,name:'Lighthouse road'},{x:2160,y:1660,name:'Beacon steps'}]};
   function message(s,t=3){state.toast=s;state.toastTime=t;}
+  function beginCourier(){const run=state.courier;if(dist(player,state.anchor)>100){message('Coast Run starts at the marina gate.');return;}if(run.phase==='active'){message(`Next checkpoint: ${run.route[run.checkpoint].name}`);return;}run.phase='active';run.startedAt=state.clock;run.elapsed=0;run.checkpoint=0;run.reward=0;message('COAST RUN · hit each gold checkpoint in order',4);}
   function nearestCar(max=58){let best=-1,bd=max;cars.forEach((c,i)=>{if(i===player.inCar)return;const d=dist(player,c);if(d<bd){bd=d;best=i;}});return best;}
   function enterExit(){const p=player;if(p.inCar>=0){const c=cars[p.inCar];p.x=c.x+Math.cos(c.angle+Math.PI/2)*35;p.y=c.y+Math.sin(c.angle+Math.PI/2)*35;c.driver=false;p.inCar=-1;message('On foot. Stay sharp.');return;}
     const i=nearestCar();if(i<0){message('Get closer to a vehicle.');return;}const c=cars[i];p.inCar=i;c.driver=true;p.angle=c.angle;if(!c.stolen){c.stolen=true;raiseHeat(1);message('Vehicle acquired · heat rising');}else message('Back behind the wheel.');}
   function raiseHeat(n){state.heat=clamp(state.heat+n,0,5);state.heatTimer=18;}
   function fire(){const p=player;if(p.inCar>=0){message('Exit the vehicle to aim.');return;}if(shots.length>=8){message('Let the last shot clear before firing again.',1.4);return;}const target=globalThis.__aim||{x:p.x+Math.cos(p.angle)*300,y:p.y+Math.sin(p.angle)*300};const a=Math.atan2(target.y-p.y,target.x-p.x);p.angle=a;shots.push({x:p.x+Math.cos(a)*20,y:p.y+Math.sin(a)*20,vx:Math.cos(a)*560,vy:Math.sin(a)*560,life:1});raiseHeat(1);message('Shot fired · police alerted',2);}
   function update(dt,input){const s=state,p=player;s.clock+=dt;if(s.toastTime>0)s.toastTime-=dt;if(p.invuln>0)p.invuln-=dt;
+    const run=s.courier;if(run.phase==='active'){run.elapsed=s.clock-run.startedAt;const gate=run.route[run.checkpoint];if(gate&&dist(p,gate)<58){run.checkpoint++;if(run.checkpoint===run.route.length){run.phase='done';run.best=run.best?Math.min(run.best,run.elapsed):run.elapsed;run.reward=Math.max(150,Math.round(650-run.elapsed*8));p.cash+=run.reward;message(`COAST RUN COMPLETE · ${run.elapsed.toFixed(1)}s · $${run.reward} paid`,5);}else message(`CHECKPOINT ${run.checkpoint}/${run.route.length} · ${run.route[run.checkpoint].name}`,2.5);}if(run.phase==='active'&&run.elapsed>=90){run.phase='ready';run.elapsed=0;run.checkpoint=0;message('Coast run timed out · press R at the marina to retry',4);}}
     if(s.heat>0){s.heatTimer-=dt;if(s.heatTimer<=0&&s.police.length===0){s.heat=Math.max(0,s.heat-1);s.heatTimer=10;if(s.heat)message('Keep moving to lose the tail.',2);}}
     if(s.heat>0&&s.police.length<Math.min(5,Math.ceil(s.heat))&&s.clock%4<dt){const a=s.clock*1.9;police.push({x:clamp(p.x+Math.cos(a)*520,40,WORLD.w-40),y:clamp(p.y+Math.sin(a)*430,40,WORLD.h-40),angle:a+Math.PI,speed:104+14*s.heat,flash:s.clock});}
     people.forEach((n,i)=>{if(!n.alive)return;n.phase+=dt; if(p.inCar>=0&&dist(n,p)<24){n.alive=false;raiseHeat(1);message('Pedestrian struck · wanted level increased');p.health=Math.max(10,p.health-8);return;}if(Math.floor(n.phase*1.4)%4===0)n.angle+=Math.sin(n.phase+i)*dt*1.1;n.x+=Math.cos(n.angle)*n.pace*dt;n.y+=Math.sin(n.angle)*n.pace*dt;if(n.x<8||n.x>WORLD.w-8||n.y<8||n.y>WORLD.h-8)n.angle+=Math.PI;});
@@ -46,5 +50,5 @@ export function makeWorld() {
     for(const stash of pickups){if(!stash.found&&dist(p,stash)<34){stash.found=true;p.cash+=stash.value;message(`${stash.label} stash · $${stash.value} collected`,2.6);}}
     if(p.health<=0){p.health=100;p.x=1170;p.y=894;p.cash=Math.max(0,p.cash-100);p.inCar=-1;s.heat=0;police.length=0;message('Recovered at the clinic · $100 fee');}
   }
-  return {state,update,enterExit,fire,raiseHeat,message,nearestCar};
+  return {state,update,enterExit,fire,raiseHeat,message,nearestCar,beginCourier};
 }

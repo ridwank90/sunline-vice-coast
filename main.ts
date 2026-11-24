@@ -1,16 +1,5 @@
-// A working gta6-01 entry (Node 22, standard library only): the game is this directory's
-// game/ folder, plain static files a desktop browser loads offline (game/index.html and its ES
-// modules, no library and no network request), and the program hands it in. It copies game/ and
-// screenshots/ from beside this file to /output and writes /output/dossier.json, the summary the
-// judge reads, with the vendored make.fun library. Only the plumbing, not an open world: Block
-// Dodger, a plain 2D canvas game where a paddle dodges falling blocks and catches coins, with a
-// title screen, score, lives and levels, game over and restart, flat colours and no sound. Build
-// your own open-world crime game in its place (three.js or any library you vendor under game/),
-// put your 3 or 4 PNG or JPEG screenshots in screenshots/ (the first by name is the cover) and run it.
-//
-// Serve it locally with `node serve.ts`, then open http://localhost:8080.
-// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
-//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// Sunline: Vice Coast is a hand-authored, offline canvas game. This entrypoint
+// checks the complete static hand-in, stages it, then writes the canonical dossier.
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, lstatSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -43,8 +32,12 @@ function imageSize(bytes: Uint8Array): [number, number] | undefined {
   }
 }
 
-// Catch an incomplete hand-in before copying anything to the grader's output.
-if (!existsSync(join(game, 'index.html'))) throw new Error('game/index.html is required');
+// Preflight revision 1: reject missing or malformed source inputs before staging.
+for (const required of ['index.html', 'src/main.js', 'src/render.js', 'src/world.js']) {
+  const path = join(game, required);
+  if (!existsSync(path) || !lstatSync(path).isFile()) throw new Error(`required game source is missing: ${required}`);
+}
+if (!existsSync(screenshots) || !lstatSync(screenshots).isDirectory()) throw new Error('screenshots/ directory is required');
 const shots = existsSync(screenshots)
   ? readdirSync(screenshots).filter((name) => !name.startsWith('.')).sort()
   : [];
@@ -52,7 +45,8 @@ if (shots.length < 3 || shots.length > 4) throw new Error('screenshots/ must con
 for (const name of shots) {
   if (!/^[A-Za-z0-9._-]{1,128}$/.test(name) || name.startsWith('-')) throw new Error(`invalid screenshot name: ${name}`);
   const path = join(screenshots, name);
-  const stat = statSync(path);
+  const stat = lstatSync(path);
+  if (stat.isSymbolicLink()) throw new Error(`screenshots/ cannot contain symlinks: ${name}`);
   if (!stat.isFile() || stat.size > 262144) throw new Error(`invalid screenshot file or size: ${name}`);
   const bytes = readFileSync(path);
   const jpeg = bytes[0] === 0xff && bytes[1] === 0xd8;
@@ -86,6 +80,28 @@ cpSync(game, join(out, 'game'), { recursive: true });
 mkdirSync(join(out, 'screenshots'), { recursive: true });
 cpSync(screenshots, join(out, 'screenshots'), { recursive: true });
 
+// Preflight revision 2: check the staged tree, including dossier overhead, as one hand-in.
+const stagedIndex = join(out, 'game', 'index.html');
+if (!existsSync(stagedIndex) || !lstatSync(stagedIndex).isFile()) throw new Error('staged game/index.html is missing');
+if (statSync(stagedIndex).size > 1048576) throw new Error('game/index.html exceeds the 1 MiB limit');
+let outputEntries = 0;
+let outputBytes = 0;
+function inspectOutput(path: string): void {
+  for (const entry of readdirSync(path)) {
+    const child = join(path, entry);
+    const stat = lstatSync(child);
+    outputEntries++;
+    if (outputEntries > 1000) throw new Error('staged output exceeds the 1,000-entry limit');
+    if (stat.isSymbolicLink()) throw new Error(`staged output cannot contain symlinks: ${child}`);
+    if (stat.isDirectory()) inspectOutput(child);
+    else if (stat.isFile()) {
+      outputBytes += stat.size;
+      if (outputBytes > 67108864) throw new Error('staged output exceeds the 64 MiB platform limit');
+    } else throw new Error(`staged output contains a non-file entry: ${child}`);
+  }
+}
+inspectOutput(out);
+
 // The scorer's own caps (reference/gate.json): only text_max_bytes shapes the bytes; the others refuse an entry the
 // scorer would refuse (more than 4 screenshots or one over 256 KiB; more than 993 files in game/ or 48 MiB of game
 // files, in all, or a path under game/ over 1000 bytes: game/ counts beside /output's own 1000-entry cap, its
@@ -100,3 +116,7 @@ writeFileSync(
     game_path_max_bytes: 1000,
   }),
 );
+if (statSync(join(out, 'dossier.json')).size > 1572864) throw new Error('dossier.json exceeds the 1.5 MiB limit');
+outputEntries = 0;
+outputBytes = 0;
+inspectOutput(out);
