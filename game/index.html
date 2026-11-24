@@ -10,12 +10,13 @@
   html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #101d27; }
   body { overscroll-behavior: none; }
   #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
-  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  #status, #instructions { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Sunline: Vice Coast, an open world coastal crime adventure"></canvas>
+<canvas id="game" tabindex="0" aria-describedby="instructions" aria-label="Sunline: Vice Coast, an open world coastal crime adventure"></canvas>
 <p id="status" role="status" aria-live="polite"></p>
+<p id="instructions">Use WASD or arrow keys to move or drive. Press E near a car to enter or exit. Aim with the mouse and click or press F to fire on foot. H visits the clinic, C toggles high contrast, P pauses, Enter resumes, and Escape returns to the title. Find Mara at the marina, then deliver the package to the lighthouse.</p>
 <noscript>This coastal adventure needs JavaScript enabled to run.</noscript>
 <script type="module" src="./src/main.js"></script>
 </body>
