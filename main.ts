@@ -42,6 +42,8 @@ function imageSize(bytes: Uint8Array): [number, number] | undefined {
   }
 }
 
+// Runtime feature note: city dispatch state and completion counts live in the local game save;
+// the static hand-in intentionally stages only game/ assets so dispatch stays fully offline.
 // Preflight revision 1: reject missing or malformed source inputs before staging.
 for (const required of ['index.html', 'src/main.js', 'src/render.js', 'src/world.js']) {
   const path = join(game, required);
@@ -60,6 +62,15 @@ function verifyLocalFile(base: string, specifier: string, context: string): stri
   return target;
 }
 const indexHtml = readFileSync(join(game, 'index.html'), 'utf8');
+if (!/<html\b[^>]*\blang=["'][a-z]{2,3}(?:-[A-Za-z0-9-]+)?["']/i.test(indexHtml)) {
+  throw new Error('game/index.html must declare a page language');
+}
+if (!/<canvas\b[^>]*\baria-label=["'][^"']+["']/i.test(indexHtml)) {
+  throw new Error('game canvas needs an accessible label');
+}
+if (/\b(?:src|href)=["']https?:\/\//i.test(indexHtml)) {
+  throw new Error('game/index.html must not load remote resources');
+}
 for (const match of indexHtml.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)) {
   verifyLocalFile(game, match[1], 'game/index.html script');
 }
@@ -121,6 +132,8 @@ mkdirSync(join(out, 'screenshots'), { recursive: true });
 cpSync(screenshots, join(out, 'screenshots'), { recursive: true });
 
 // Preflight revision 2: check the staged tree, including dossier overhead, as one hand-in.
+// Keep this entrypoint's source graph local: all gameplay, dispatch markers, and HUD code must
+// resolve from game/ so a downloaded copy can be served without a build-time or network dependency.
 const stagedIndex = join(out, 'game', 'index.html');
 if (!existsSync(stagedIndex) || !lstatSync(stagedIndex).isFile()) throw new Error('staged game/index.html is missing');
 if (statSync(stagedIndex).size > 1048576) throw new Error('game/index.html exceeds the 1 MiB limit');

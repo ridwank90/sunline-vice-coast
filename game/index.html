@@ -4,19 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#101d27">
-<meta name="description" content="Explore Vice Coast, run a timed four-checkpoint coastal delivery, work Mara's story, and outrun patrols offline.">
+<meta name="description" content="Explore Vice Coast, answer three timed city service calls, run Coast Run, work Mara's story, and outrun patrols offline.">
 <title>Sunline: Vice Coast</title>
 <style>
   html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #101d27; }
   body { overscroll-behavior: none; }
   #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+  #game:focus-visible { outline: 3px solid #f4dc92; outline-offset: -3px; }
   #status, #instructions { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 </style>
 </head>
 <body>
 <canvas id="game" tabindex="0" aria-describedby="instructions" aria-label="Sunline: Vice Coast game area"></canvas>
 <p id="status" role="status" aria-live="polite"></p>
-<p id="instructions">Sunline: Vice Coast. Press Enter or click to start. Use WASD or arrow keys to move on foot; in a car, Up accelerates, Down brakes or reverses, and Left or Right steers. Shift sprints on foot. E enters or exits a nearby car. Move the mouse to aim, then click or press F to fire on foot. At the marina gate, press R to start Coast Run: pass Marina gate, Canal bend, Lighthouse road, and Beacon steps in order within 90 seconds. Follow the orange minimap route and the named next checkpoint. Completion pays from $650 down to a $150 minimum; timeout resets the run. H restores health for $50. C toggles the high contrast player outline and screen border. P pauses; Enter or click resumes; Escape returns to the title while paused. M shows the map marker color guide. Find Mara at the marina and deliver her package to the lighthouse. Game progress and Coast Run best time are saved in this browser. The animated canvas and changing HUD are visual and are not fully available to screen readers.</p>
+<p id="instructions">Sunline: Vice Coast. Press Enter or click to start. Use WASD or arrow keys to move on foot; in a car, Up accelerates, Down brakes or reverses, and Left or Right steers. Shift sprints on foot. E enters or exits a nearby car. Move the mouse to aim, then click or press F to fire on foot. Press Q for a local tip that marks the nearest undiscovered coast stash for eight seconds; tips recharge in 24 seconds. Press J to request a city dispatch. Find the stranded driver or injured caller and move close to complete the pickup; stay beside the street race witness for 12 seconds. Calls have deadlines, individual cooldowns, and cash payouts; completed call counts save in this browser. At the marina gate, press R to start Coast Run: pass Marina gate, Canal bend, Lighthouse road, and Beacon steps in order within 90 seconds. Follow the orange minimap route and the named next checkpoint. Completion pays from $650 down to a $150 minimum; timeout resets the run. H restores health for $50. C toggles the high contrast player outline and screen border. P pauses; Enter or click resumes; Escape returns to the title while paused. M shows the map marker color guide. Find Mara at the marina and deliver her package to the lighthouse. Game progress and Coast Run best time are saved in this browser. The animated canvas and changing HUD are visual and are not fully available to screen readers.</p>
 <noscript>This coastal adventure needs JavaScript enabled to run.</noscript>
 <script type="module" src="./src/main.js"></script>
 </body>
